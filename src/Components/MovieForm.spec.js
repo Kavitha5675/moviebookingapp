@@ -1,123 +1,93 @@
 import React from 'react';
 import MovieForm from "./Dashboard/MovieForm";
-import {act, cleanup, fireEvent, render, screen} from '@testing-library/react'
-import user from '@testing-library/user-event'
+import {fireEvent, render, screen} from '@testing-library/react'
 
-afterAll(()=>{
-    cleanup()
-})
+const datum = {
+    _id: "61b82ba297069d03e8491e1d",
+    name: "Avengers",
+    total: "50",
+    booked: "0"
+};
 
-it('checks if title booking dashboard and input fields are rendered', () => {
-    render(<MovieForm/>)
-    expect(screen.getByText("Booking Dashboard")).toBeInTheDocument()
-    expect(screen.getByTestId("_id")).toBeInTheDocument()
-    expect(screen.getByTestId("booked")).toBeInTheDocument()
-})
+describe("movie form describe statement", () => {
+    it('checks if title booking dashboard and movie input fields are rendered', () => {
+        render(<MovieForm/>)
 
-it("check if the book button is rendered", async () => {
-    const handleSubmit = jest.fn()
-    const {getByTestId, getByRole} = render(<MovieForm handleSubmit={handleSubmit}/>)
-    let idInput = getByTestId("_id");
-    let bookInput = getByTestId("booked");
-    await act(async () => {
-        fireEvent.change(idInput, {target: {value: "123456"}})
-        fireEvent.change(bookInput, {target: {value: "3"}})
-    })
-    await act(async () => {
-        try {
-            fireEvent.click(getByRole("button"))
-            expect(handleSubmit).toHaveBeenCalledTimes(1);
-        } catch (e) {
-        }
-    })
-})
-
-it("check if the id validation is rendered", async () => {
-    const {getByTestId, container} = render(<MovieForm movieData={[]}/>)
-    await act(async () => {
-        let idInput = getByTestId("_id");
-        fireEvent.change(idInput, {target: {value: "123456456"}})
-        fireEvent.blur(idInput)
+        expect(screen.getByText("Booking Dashboard")).toBeInTheDocument()
+        expect(screen.getByTestId("_id")).toBeInTheDocument()
+        expect(screen.getByTestId("book")).toBeInTheDocument()
     })
 
-    expect(container.innerHTML).toMatch("Enter a Valid movieId")
-})
+    it('movie form should be in the document', () => {
+        const component = render(<MovieForm/>)
 
-it("checks if the tickets validation is rendered", async () => {
-    const movieData = jest.fn()
-    movieData.mockClear()
-    const data = {
-        _id: "61b82ba297069d03e8491e1d",
-        name: "Avengers",
-        total: "50",
-        booked: "6"
-    };
-    const {container} = render(<MovieForm movieData={data}/>)
-    const id = screen.getByText(/movie id/i)
-    user.type(id, "61b82ba297069d03e8491e1d")
-    const book = screen.getByText(/number of tickets to book/i)
-    user.type(book, "56")
+        const idLabelNode = component.getByLabelText("Movie Id")
+        const bookLabelNode = component.getByLabelText("Number of tickets to book")
 
-    const button = screen.getByRole('button', {
-        name: /book/i
-    });
-    fireEvent.blur(button)
-    await act(async () => {
-        try {
-            expect(movieData).toHaveBeenCalledTimes(1)
-            expect(button).toBeInTheDocument()
-            expect(container.innerHTML).toMatch(/only 44 tickets are available/i)
-        } catch (e) {
-        }
-    })
-})
-
-it("checks for the successful message after booking", async () => {
-    const movieData = jest.fn()
-    movieData.mockClear()
-    const data = {
-        _id: "61bb79d897069d03e8492466",
-        name: "Avengers",
-        total: "50",
-        booked: "6"
-    };
-    const {container} = render(<MovieForm movieData={data}/>)
-    await act(async () => {
-        const id = screen.getByText(/movie id/i)
-        user.type(id, "61bb79d897069d03e8492466")
-        const book = screen.getByText(/number of tickets to book/i)
-        user.type(book, "6")
-        user.click(screen.getByRole('button', {
-            name: /book/i
-        }));
-
-    })
-    // fireEvent.blur(button)
-    await act(async () => {
-        try {
-            expect(movieData).toHaveBeenCalledTimes(1)
-            expect(container.innerHTML).toMatch(/movie 61bb79d897069d03e8492466 booked /i)
-        } catch (e) {
-        }
+        expect(idLabelNode).toBeInTheDocument()
+        expect(bookLabelNode).toBeInTheDocument()
     })
 
+    it("id field should have label", () => {
+        const component = render(<MovieForm/>)
+
+        const idInputNode = component.getByLabelText("Movie Id")
+        const bookInputNode = component.getByLabelText("Number of tickets to book")
+
+        expect(idInputNode.getAttribute("name")).toBe("movie-id")
+        expect(bookInputNode.getAttribute("name")).toBe("booked")
+    })
+
+    it("id input should accept valid id", () => {
+        const {getByLabelText, getByText} = render(<MovieForm movieData={[datum]}/>)
+
+        const idInputNode = getByLabelText("Movie Id")
+        fireEvent.change(idInputNode, {target: {value: "12361b82ba297069d03e8491e1d"}})
+        fireEvent.blur(idInputNode)
+
+        const errorMessage = getByText("Enter a valid id");
+        expect(errorMessage).toBeInTheDocument()
+    })
+
+    it("number of tickets book input should accept valid number of tickets", () => {
+        const {getByLabelText, getByText} = render(<MovieForm movieData={[datum]}/>)
+
+        const idInputNode = getByLabelText("Movie Id")
+        fireEvent.change(idInputNode, {target: {value: "61b82ba297069d03e8491e1d"}})
+        fireEvent.blur(idInputNode)
+        const bookInputNode = getByLabelText("Number of tickets to book")
+        fireEvent.change(bookInputNode, {target: {value: "60"}})
+        fireEvent.blur(bookInputNode)
+
+        const errorMessage = getByText("Booking with 61b82ba297069d03e8491e1d cannot be done");
+        expect(errorMessage).toBeInTheDocument()
+    })
+
+    it("should be able to submit form", () => {
+        const mockFn = jest.fn()
+        const {getByRole} = render(<MovieForm movieData={[datum]} onSubmit={mockFn}/>)
+
+        const buttonNode = getByRole("button")
+        fireEvent.submit(buttonNode)
+
+        expect(mockFn).toHaveBeenCalledTimes(1)
+    })
+
+    it("should able to submit form with successful booked message", () => {
+        const mockFn = jest.fn()
+        const {getByLabelText, getByText, getByRole} = render(<MovieForm movieData={[datum]} onSubmit={mockFn}/>)
+
+        const idInputNode = getByLabelText("Movie Id")
+        fireEvent.change(idInputNode, {target: {value: "61b82ba297069d03e8491e1d"}})
+        fireEvent.blur(idInputNode)
+        const bookInputNode = getByLabelText("Number of tickets to book")
+        fireEvent.change(bookInputNode, {target: {value: "30"}})
+        fireEvent.blur(bookInputNode)
+        const buttonNode = getByRole("button")
+        fireEvent.submit(buttonNode)
+
+        expect(mockFn).toHaveBeenCalledTimes(1)
+        const successMessage = getByText("movie 61b82ba297069d03e8491e1d booked");
+        expect(successMessage).toBeInTheDocument()
+    })
 })
-
-
-// it("check if the book button is rendered",async()=>{
-//     const handleSubmit = jest.fn()
-//     handleSubmit.mockClear()
-//     render(<MovieForm handleSubmit={handleSubmit}/>)
-//
-//     const id=screen.getByText(/movie id/i)
-//     user.type(id,"1bb0fd997069d03e84923cd")
-//     const book=screen.getByText(/number of tickets to book/i)
-//     user.type(book,"3")
-//     const button = screen.getByRole('button', {
-//         name: /book/i
-//     });
-//     await waitFor(()=>{
-//         // expect(handleSubmit).toHaveBeenCalledTimes(1)
-//         expect(button).toBeInTheDocument()
-//     })
-// })

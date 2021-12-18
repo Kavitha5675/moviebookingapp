@@ -1,103 +1,102 @@
-import React from 'react';
-import {Field, Formik} from "formik";
+import React, {useState} from 'react';
 import '/Users/admin/Documents/Projects/personal/moviebookingapp/src/Components/Styles/Styles.scss'
+import {TextField} from "@material-ui/core";
 
-const MovieForm = ({movieData}) => {
+const MovieForm = (props) => {
 
-    const initialValues = {
-        _id: "",
-        booked: ""
+    const [idError, setIdError] = useState("")
+    const [bookError, setBookError] = useState("")
+    const [id, setId] = useState("")
+    const [booked, setBooked] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    let isIdValid = 0
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        handleBlurForId(id)
+        handleBlurForBook(booked)
+        if (idError.length === 0 && bookError.length === 0) {
+            setIsSubmitting(true)
+            props.onSubmit(id, booked)
+        }
     };
 
-    const movieSchema = (values) => {
-        let errors = {};
-        let isIdValid = 0
-        let key;
-        for (key in movieData) {
-            if (movieData[key]["_id"] === values._id) {
+    const getIdValidation = (id) => {
+        console.log(id)
+        for (const [key, value] of props.movieData.entries()) {
+            if (value._id === id) {
                 isIdValid = 1
                 break
             }
         }
         if (!isIdValid) {
-            errors._id = "Enter a Valid movieId"
+            setIdError("Enter a valid id")
         } else {
-            let book = (parseInt(movieData[key]["booked"], 10)) + parseInt(values.booked, 10)
-            let total = (parseInt(movieData[key]["total"], 10))
-            let available = (parseInt(movieData[key]["total"], 10)) - (parseInt(movieData[key]["booked"], 10))
-            if (book > total) {
-                console.log("hi")
-                errors.booked = "Only " + available + " tickets are available"
-            }
-            if (available === 0) {
-                errors.booked = "No tickets are available"
+            setIdError("")
+        }
+    }
+
+    const handleBlurForId = (id) => {
+        getIdValidation(id)
+    }
+
+    const getBookValidation = (booked) => {
+        console.log(booked)
+        let isValidBook = 0;
+        for (const [key, value] of props.movieData.entries()) {
+            if (value._id === id) {
+                console.log(id)
+                let book = (parseInt(value.booked, 10)) + parseInt(booked, 10)
+                let total = (parseInt(value.total, 10))
+                if (book <= total) {
+                    isValidBook = 1
+                    break
+                }
             }
         }
-        return errors;
+        if (!isValidBook) {
+            setBookError("Booking with " + id + " cannot be done")
+        } else {
+            setBookError("")
+        }
     }
 
-    const submitForm = (values) => {
-        console.log(values)
+    const handleBlurForBook = (booked) => {
+        getBookValidation(booked);
     }
+
     return (
-        <div>
-            <Formik
-                initialValues={initialValues}
-                validate={movieSchema}
-                onSubmit={submitForm}>
+        <div className={"container"}>
+            <form onSubmit={handleSubmit}>
+                <h3>Booking Dashboard</h3>
+                <label htmlFor={"movie-id"}>Movie Id</label>
+                <TextField type={"_id"} name="movie-id" id="movie-id" value={id}
+                           onChange={event => setId(event.target.value)}
+                           inputProps={{"data-testid": "_id"}}
+                           onBlur={event => handleBlurForId(event.target.value)}/>
+                {idError.length !== 0 && (
+                    <span className={"error"}>{idError}</span>
+                )}
 
-                {(formik) => {
-                    const {
-                        values,
-                        handleChange,
-                        handleSubmit,
-                        errors,
-                        touched,
-                        handleBlur,
-                        isValid,
-                        dirty,
-                        isSubmitting
-                    } = formik;
+                <label htmlFor={"booked"}>Number of tickets to book</label>
+                <TextField type={"booked"} name={"booked"} id={"booked"} inputProps={{"data-testid": "book"}}
+                           value={booked}
+                           onChange={event => setBooked(event.target.value)}
+                           onBlur={event => handleBlurForBook(event.target.value)}/>
+                {bookError.length !== 0 && (
+                    <span className={"error"} id={"book-error"}>{bookError}</span>)}
 
-
-                    return (
-                        <div className={"container"}>
-                            <h3>Booking Dashboard</h3>
-                            <form onSubmit={handleSubmit}>
-                                <label htmlFor={"_id"}>Movie Id</label>
-                                <Field type={"_id"} name={"_id"} id={"_id"} data-testid={"_id"} value={values._id}
-                                       onChange={handleChange} onBlur={handleBlur}
-                                       className={errors._id && touched._id ? "input-error" : null}/>
-                                {errors._id && touched._id && (
-                                    <span className={"error"}>{errors._id}</span>
-                                )}
-
-                                <label htmlFor={"booked"}>Number of tickets to book</label>
-                                <Field type={"booked"} name={"booked"} id={"booked"} data-testid={"booked"}
-                                       value={values.booked}
-                                       onChange={handleChange} onBlur={handleBlur}
-                                       className={errors.booked && touched.booked ? "input-error" : null}/>
-                                {errors.booked && touched.booked && (
-                                    <span className={"error"}>{errors.booked}</span>
-                                )}
-
-                                <button
-                                    type={"submit"}
-                                    data-testid={"button"}
-                                    onClick={handleSubmit}
-                                    className={!(dirty && isValid) ? "disabled-btn" : ""}
-                                    disabled={!(dirty && isValid)}
-                                >
-                                    Book
-                                </button>
-                                {Object.keys(errors).length === 0 && isSubmitting && (
-                                    <span>movie {values._id} booked</span>
-                                )}
-                            </form>
-                        </div>
-                    )
-                }}
-            </Formik>
+                <button
+                    type={"submit"}
+                    role={"button"}
+                    onClick={handleSubmit}
+                >
+                    Book
+                </button>
+                {idError.length === 0 && bookError.length === 0 && isSubmitting && (
+                    <span>movie {id} booked</span>
+                )}
+            </form>
         </div>
     )
 };

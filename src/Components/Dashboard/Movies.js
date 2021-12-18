@@ -13,39 +13,40 @@ function Movies() {
     function getMovies() {
         try {
             MovieService.list().then(movies => {
+                console.log(movies)
                 setMovieData(movies.data)
             })
         } catch (e) {
         }
     }
 
-    const handleSubmit = (values) => {
+    const getUpdatedMovies = async (id, booked) => {
         let data;
         movieData.forEach((movie) => {
-            if (values._id === movie["_id"]) {
-                movie["booked"] = (parseInt(movie["booked"], 10) + parseInt(values.booked, 10)).toString();
+            if (id === movie["_id"]) {
+                movie["booked"] = (parseInt(movie["booked"], 10) + parseInt(booked, 10)).toString();
                 console.log(movie["booked"])
                 data = {
                     "name": movie.name,
                     "total": movie["total"],
                     "booked": movie["booked"]
                 }
-                MovieService.update(data, values._id).then()
-                getMovies()
             }
         })
+        await MovieService.update(data, id).then()
+        getMovies()
     };
 
     return (
         <div className={{class: "movie"}}>
-            <MovieForm movieData={movieData} handleSubmit={handleSubmit}/>
+            <MovieForm movieData={movieData} onSubmit={getUpdatedMovies}/>
             <Table aria-label="simple table" id="table">
                 <TableHead>
                     <TableRow>
-                        <TableCell key={"movieName"} id="name" align="center">Movie Name</TableCell>
-                        <TableCell id="_id" align="center">ID</TableCell>
-                        <TableCell id="total" align="center">Total tickets</TableCell>
-                        <TableCell id="booked" align="center">Booked</TableCell>
+                        <TableCell key={"movieName"} id="name1" align="center">Movie Name</TableCell>
+                        <TableCell id="id1" align="center">ID</TableCell>
+                        <TableCell id="total1" align="center">Total tickets</TableCell>
+                        <TableCell id="booked1" align="center">Booked</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -63,7 +64,6 @@ function Movies() {
                     })}
                 </TableBody>
             </Table>
-
         </div>
     );
 }
